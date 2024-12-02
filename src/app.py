@@ -15,6 +15,7 @@ CORS(app)
 # create the jackson family object
 jackson_family = FamilyStructure("Jackson")
 
+
 # Handle/serialize errors like a JSON object
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
@@ -28,15 +29,49 @@ def sitemap():
 @app.route('/members', methods=['GET'])
 def handle_hello():
 
-    # this is how you can use the Family datastructure by calling its methods
-    members = jackson_family.get_all_members()
-    response_body = {
-        "hello": "world",
-        "family": members
-    }
+    try:
+        members = jackson_family.get_all_members()
+        return jsonify(members), 200
+    except Exception as error:
+        return jsonify("No se encontraron contactos"),400
 
+@app.route('/member', methods =['POST'])
+def  post_members():
+    try:
+        body = request.json
+        if type(body) == dict:
+            if body.get("first_name") == None or body.get("age") == None or body.get("lucky_numbers")==None:
+                return jsonify("Invalid operation"),400
 
-    return jsonify(response_body), 200
+            else:
+               result = jackson_family.add_member(body)
+               if result == True:
+                    return jsonify([]),200
+        else:
+            return jsonify("Invalid Body"),400
+
+    except Exception as error:
+        return jsonify("Se tumbo el servidor:("),500
+
+@app.route('/member/<int:member_id>', methods=['DELETE'])
+def delete_member(member_id):
+    try:
+        result = jackson_family.delete_member(member_id)
+        if result is None:
+            return jsonify({"message":"family member not found"}),404
+        return jsonify({"done":True}),200 
+
+    except Exception as error:
+        print(error)
+        return jsonify("The server encounters an error"),500
+
+@app.route('/member/<int:member_id>', methods=['GET'])
+def get_member(member_id):
+    try:
+        member = jackson_family.get_member(member_id)
+        return jsonify(member),200
+    except Exception as error:
+        return jsonify("The server found an error"), 500
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
